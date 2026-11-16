@@ -95,7 +95,7 @@ function tone(freq, dur, when = 0, vol = 0.8) {
 }
 
 const SOUND = {
-  count:   () => tone(880, 0.12),                                   // 3・2・1 のピッ
+  count:   () => tone(880, 0.12),                                   // 5・4・3・2・1 のピッ
   prep:    () => tone(880, 0.12),
   work:    () => tone(1320, 0.6),                                   // 高いピー：運動開始
   rest:    () => tone(660, 0.6),                                    // 低いピー：休憩開始
@@ -239,7 +239,7 @@ function tick() {
     if (seg.start > prev && seg.start <= e) {
       SOUND[seg.type]();           // 区間の切り替わり
     } else {
-      for (const m of [3, 2, 1]) {  // 切り替わり3秒前からのカウント
+      for (const m of [5, 4, 3, 2, 1]) {  // 切り替わり5秒前からのカウント
         const t = seg.end - m;
         if (m < seg.dur && t > prev && t <= e) { SOUND.count(); break; }
       }
@@ -313,6 +313,11 @@ function onStop() {
 
 // ===== イベント =====
 $('start').addEventListener('click', start);
+$('soundTest').addEventListener('click', () => {
+  ensureAudio();
+  // 解除直後は running になるまで少し待つ
+  setTimeout(() => { SOUND.count(); setTimeout(SOUND.work, 400); setTimeout(SOUND.rest, 1200); }, 100);
+});
 $('pause').addEventListener('click', togglePause);
 $('stop').addEventListener('click', onStop);
 
