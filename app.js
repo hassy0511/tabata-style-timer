@@ -104,16 +104,25 @@ const SOUND = {
 };
 
 // ===== 画面スリープ防止 =====
+// Wake Lock API に加え、効かない環境向けに無音の動画をループ再生して自動ロックを防ぐ。
 let wakeLock = null;
+const keepAwakeVideo = $('keepAwake');
+keepAwakeVideo.muted = true;
+
 async function requestWake() {
+  try {
+    const p = keepAwakeVideo.play();
+    if (p) p.catch(() => {});
+  } catch (e) { /* noop */ }
   try {
     if ('wakeLock' in navigator && !wakeLock) {
       wakeLock = await navigator.wakeLock.request('screen');
       wakeLock.addEventListener('release', () => { wakeLock = null; });
     }
-  } catch (e) { /* 非対応・拒否時は何もしない */ }
+  } catch (e) { /* 非対応・拒否時は動画側に任せる */ }
 }
 function releaseWake() {
+  try { keepAwakeVideo.pause(); } catch (e) { /* noop */ }
   if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
 }
 

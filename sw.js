@@ -1,6 +1,6 @@
 // オフラインでも起動できるようにファイルをキャッシュする。
 // ファイルを更新したら VERSION を上げること。
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `tabata-${VERSION}`;
 const FILES = [
   './',
@@ -28,6 +28,8 @@ self.addEventListener('activate', (e) => {
 // ネット優先・失敗時はキャッシュ（更新がすぐ反映され、オフラインでも動く）
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // 動画は Range リクエストになるので Service Worker を通さない
+  if (new URL(e.request.url).pathname.endsWith('.mp4')) return;
   e.respondWith(
     fetch(e.request)
       .then((res) => {

@@ -19,6 +19,7 @@
     <h1>タバタタイマー</h1>
     <div id="fields" class="fields"></div>
     <div class="total">合計 <span id="total">0:00</span></div>
+    <p class="note">※画面をロック（電源ボタン）すると音は鳴りません。<br>動作中は画面が自動で消えないようにしています。</p>
     <button id="soundTest" class="btn sub">音のテスト</button>
     <button id="start" class="btn primary">スタート</button>
   </main>
@@ -40,6 +41,9 @@
       <button id="pause" class="btn primary">一時停止</button>
     </div>
   </main>
+
+  <!-- 画面の自動ロック防止用（無音・映像のみの小さな動画をループ再生） -->
+  <video id="keepAwake" src="nosleep.mp4" muted playsinline loop preload="auto" aria-hidden="true"></video>
 
   <script src="app.js"></script>
 </body>
