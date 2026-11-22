@@ -151,3 +151,22 @@ body.paused .time { opacity: 0.4; }
 .controls { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
 #run .btn { background: rgba(0, 0, 0, 0.25); }
 #run .btn.primary { background: rgba(255, 255, 255, 0.95); color: #111; }
+
+/* ---------- 音の再開を促す表示 ---------- */
+.audio-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 16px;
+  font-family: inherit;
+}
+.audio-overlay[hidden] { display: none; }
+.audio-overlay .big { font-size: 26px; font-weight: 700; }

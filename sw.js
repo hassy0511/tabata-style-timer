@@ -1,6 +1,6 @@
 // オフラインでも起動できるようにファイルをキャッシュする。
 // ファイルを更新したら VERSION を上げること。
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = `tabata-${VERSION}`;
 const FILES = [
   './',

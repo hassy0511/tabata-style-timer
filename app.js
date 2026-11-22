@@ -60,21 +60,46 @@ function buildSegments(s) {
 
 // ===== 音（Web Audio）=====
 // 'ambient' にすると音楽アプリを止めずに上から重ねて鳴らせる（iOS 17+ の Safari）。
-try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) { /* noop */ }
+function setAudioSessionType() {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) { /* noop */ }
+}
+setAudioSessionType();
 
 let ctx = null;
 let master = null;
+// iOS は画面ロック等で音声出力を切り、復帰後も同じ AudioContext では鳴らないことがある。
+// そのため一度バックグラウンドに回ったら「要作り直し」とし、次のタップで新しく作る。
+let audioStale = false;
 
+function audioOK() {
+  return !!ctx && ctx.state === 'running' && !audioStale;
+}
+
+// ユーザーのタップ（click / touchend）の中で呼ぶこと
 function ensureAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  if (ctx && (audioStale || ctx.state === 'interrupted' || ctx.state === 'closed')) {
+    try { ctx.close(); } catch (e) { /* noop */ }
+    ctx = null;
+  }
+  audioStale = false;
+  setAudioSessionType();
   if (!ctx) {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
     ctx = new AC();
     master = ctx.createGain();
     master.gain.value = 0.9;
     master.connect(ctx.destination);
   }
   if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  // 無音を一瞬鳴らして iOS の音声出力を確実に有効化する
+  try {
+    const src = ctx.createBufferSource();
+    src.buffer = ctx.createBuffer(1, 1, 22050);
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch (e) { /* noop */ }
+  updateAudioOverlay();
 }
 
 function tone(freq, dur, when = 0, vol = 0.8) {
@@ -228,7 +253,7 @@ function start() {
 
 function tick() {
   if (!state.running) return;
-  if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+  updateAudioOverlay();
   const e = elapsedSec();
   const prev = state.prevE;
   state.prevE = e;
@@ -331,14 +356,28 @@ $('pause').addEventListener('click', togglePause);
 $('stop').addEventListener('click', onStop);
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
+  if (document.visibilityState === 'hidden') {
+    // ロック・アプリ切り替え後は音声が死んでいることがあるので作り直し対象にする
+    if (ctx) audioStale = true;
+  } else {
     if (state.active && !state.finished) requestWake();
+    updateAudioOverlay();
     if (state.running) tick();
   }
 });
 
-// 画面のどこかを触ったら音声を復帰（電話などで中断された場合用）
-document.addEventListener('pointerdown', () => { if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {}); });
+// 音が止まっているときの「タップで再開」表示
+function updateAudioOverlay() {
+  const show = state.active && !state.finished && !audioOK();
+  $('audioOverlay').hidden = !show;
+}
+$('audioOverlay').addEventListener('click', () => { ensureAudio(); });
+
+// 画面のどこかをタップしたときも、音が止まっていれば復帰させる
+// （iOS は touchstart / pointerdown では音声を有効化できないため touchend / click で行う）
+['touchend', 'click'].forEach((ev) => document.addEventListener(ev, () => {
+  if (ctx && !audioOK()) ensureAudio();
+}, true));
 
 renderFields();
 
